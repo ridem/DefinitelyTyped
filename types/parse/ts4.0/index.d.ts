@@ -1,30 +1,3 @@
-// Type definitions for parse 2.18
-// Project: https://parseplatform.org/
-// Definitions by:  Ullisen Media Group <https://github.com/ullisenmedia>
-//                  David Poetzsch-Heffter <https://github.com/dpoetzsch>
-//                  Cedric Kemp <https://github.com/jaeggerr>
-//                  Flavio Negrão <https://github.com/flavionegrao>
-//                  Wes Grimes <https://github.com/wesleygrimes>
-//                  Otherwise SAS <https://github.com/owsas>
-//                  Andrew Goldis <https://github.com/agoldis>
-//                  Alexandre Hétu Rivard <https://github.com/AlexandreHetu>
-//                  Diamond Lewis <https://github.com/dplewis>
-//                  Jong Eun Lee <https://github.com/yomybaby>
-//                  Colin Ulin <https://github.com/pocketcolin>
-//                  Robert Helms <https://github.com/rdhelms>
-//                  Julien Quere <https://github.com/jlnquere>
-//                  Thibault MOCELLIN <https://github.com/tybi>
-//                  Raschid JF Rafaelly <https://github.com/RaschidJFR>
-//                  Jeff Gu Kang <https://github.com/jeffgukang>
-//                  Bui Tan Loc <https://github.com/buitanloc>
-//                  Linus Unnebäck <https://github.com/LinusU>
-//                  Jerome De Leon <https://github.com/JeromeDeLeon>
-//                  Kent Robin Haugen <https://github.com/kentrh>
-//                  Asen Lekov <https://github.com/L3K0V>
-//                  Switt Kongdachalert <https://github.com/swittk>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-// Minimum TypeScript Version: 3.5
-
 /// <reference types="node" />
 /// <reference path="node.d.ts" />
 /// <reference path="react-native.d.ts" />
@@ -37,22 +10,6 @@ import { EventEmitter } from "events";
  */
 type SafeAttributes<T, K extends keyof T> = Pick<Required<T>, K> | Required<T>;
 type NotUndefined<T> = T extends undefined ? never : T;
-
-type ObjectAttributes<T extends Parse.Object> = T extends Parse.Object<infer U> ? U : never;
-type ParseObjectAttributesKeys<T extends Parse.Object> = {
-    [Key in keyof ObjectAttributes<T>]-?: string extends ObjectAttributes<T>[Key] ? never : ObjectAttributes<T>[Key] extends Parse.Object ? Key : never;
-}[keyof ObjectAttributes<T>];
-type ParseDotPaths<T extends Parse.Object<any>, Key extends keyof ObjectAttributes<T>> = string extends Key ? string : Key extends string
-    ? ObjectAttributes<T>[Key] extends Parse.Object<any>
-        ? // prettier-ignore
-          | `${Key}.${ParseDotPaths<ObjectAttributes<T>[Key], ParseObjectAttributesKeys<ObjectAttributes<T>[Key]>> & string}`
-          | `${Key}.${ParseObjectAttributesKeys<ObjectAttributes<T>[Key]> & string}`
-        : never
-    : never;
-
-type QueryPaths<T extends Parse.Object> = string extends keyof ObjectAttributes<T>
-    ? string
-    : ParseDotPaths<T, ParseObjectAttributesKeys<T>> | ParseObjectAttributesKeys<T>;
 
 declare enum ErrorCode {
     OTHER_CAUSE = -1,
@@ -763,8 +720,8 @@ declare global {
                 key: K,
                 value: T["attributes"][K],
             ): this;
-            include(...key: Array<QueryPaths<T>>): this;
-            include(key: Array<QueryPaths<T>>): this;
+            include<K extends keyof T["attributes"] | keyof BaseAttributes>(...key: K[]): this;
+            include<K extends keyof T["attributes"] | keyof BaseAttributes>(key: K[]): this;
             includeAll(): Query<T>;
             lessThan<K extends keyof T["attributes"] | keyof BaseAttributes>(key: K, value: T["attributes"][K]): this;
             lessThanOrEqualTo<K extends keyof T["attributes"] | keyof BaseAttributes>(

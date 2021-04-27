@@ -1,13 +1,23 @@
 // Parse is a global type, but it can also be imported
 async function test_imports() {
+    /**
+     * Note: import("parse") would make the test suite import types/parse,
+     * so we wouldn't be testing this folder.
+     * See https://github.com/DefinitelyTyped/DefinitelyTyped/blob/394b6f5ceedd3acaea0d183f8d2c9b7117c8b3f3/types/styled-components/ts3.6/test/index.tsx#L23
+     */
+
+    /* tslint:disable:no-relative-import-in-test */
+
     // $ExpectType typeof Parse
-    const ParseDirect = await import("parse");
+    const ParseDirect = await import("./");
     // $ExpectType typeof Parse
-    const ParseNode = await import("parse/node");
+    const ParseNode = await import("./node");
     // $ExpectType typeof Parse
-    const ParseRN = await import("parse/react-native");
+    const ParseRN = await import("./react-native");
 
     // const ParseBad = await import('parse/bad'); // Error - but $ExpectError doesn't work for imports
+
+    /* tslint:enable:no-relative-import-in-test */
 }
 
 class GameScore extends Parse.Object {
@@ -249,10 +259,8 @@ function test_anonymous_utils() {
     Parse.AnonymousUtils.logIn({ useMasterKey: true, sessionToken: "" });
 }
 
-function return_a_query(): Parse.Query<Game> {
-    const q = new Parse.Query(Game);
-    q.include("gameScore");
-    return q;
+function return_a_query(): Parse.Query {
+    return new Parse.Query(Game);
 }
 
 function test_each() {
@@ -1802,10 +1810,10 @@ function testQuery() {
         // $ExpectError
         query.greaterThanOrEqualTo("nonexistentProp", 1000);
 
-        // $ExpectError
+        // $ExpectType Query<MySubClass>
         query.include(["attribute1", "attribute2"]);
         // $ExpectType Query<MySubClass>
-        query.include("attribute3");
+        query.include<any>("attribute3.someProp");
         // $ExpectError
         query.include(["attribute1", "nonexistentProp"]);
 
@@ -2022,38 +2030,4 @@ function testEncryptingUser() {
     function testIsEncryptedUserEnabled() {
         Parse.isEncryptedUserEnabled();
     }
-}
-
-function testNestedIncludes() {
-    class Computer extends Parse.Object<{ name: string; age: number }> {
-        constructor(options?: any) {
-            super("Computer", options);
-        }
-    }
-
-    class Player extends Parse.Object<{ name: string; age: number; computer: Computer }> {
-        constructor(options?: any) {
-            super("Player", options);
-        }
-    }
-
-    class HighScore extends Parse.Object<{ player: Player; date: Date; score: number }> {
-        constructor(options?: any) {
-            super("HighScore", options);
-        }
-    }
-
-    class VideoGame extends Parse.Object<{ title: string; highScore: HighScore }> {
-        constructor(options?: any) {
-            super("VideoGame", options);
-        }
-    }
-
-    const query = new Parse.Query(VideoGame);
-
-    query.include(["highScore", "highScore.player.computer"]);
-    query.include("highScore");
-
-    // $ExpectError
-    query.include("highScore.unknown");
 }
