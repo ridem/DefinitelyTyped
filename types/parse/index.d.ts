@@ -89,6 +89,8 @@ declare enum ErrorCode {
     X_DOMAIN_REQUEST = 602,
 }
 
+type Constructor<T> = new (...args: any[]) => T;
+
 declare global {
     namespace Parse {
         let applicationId: string;
@@ -257,7 +259,7 @@ declare global {
             setRoleWriteAccess(role: Role | string, allowed: boolean): void;
             getRoleWriteAccess(role: Role | string): boolean;
 
-            toJSON(): any;
+            toJSON(): Record<string, unknown>;
         }
 
         /**
@@ -482,8 +484,10 @@ declare global {
             unset(attr: Extract<keyof T, string>, options?: any): this | false;
             validate(attrs: Attributes, options?: SuccessFailureOptions): Error | false;
         }
+
         interface ObjectStatic<T extends Object = Object> {
-            createWithoutData(id: string): T;
+            className: string;
+            createWithoutData<T extends Object>(this: Constructor<T>, id: string): T;
             destroyAll<T extends Object>(list: T[], options?: Object.DestroyAllOptions): Promise<T[]>;
             extend(className: string | { className: string }, protoProps?: any, classProps?: any): any;
             fetchAll<T extends Object>(list: T[], options: Object.FetchAllOptions): Promise<T[]>;
@@ -498,10 +502,10 @@ declare global {
                 keys: keyof T["attributes"] | Array<keyof T["attributes"]>,
                 options?: RequestOptions,
             ): Promise<T[]>;
-            fromJSON(json: any, override?: boolean): T;
+            fromJSON<T extends Object>(this: Constructor<T>, json: Record<string, unknown>, override?: boolean): T;
             pinAll(objects: Object[]): Promise<void>;
             pinAllWithName(name: string, objects: Object[]): Promise<void>;
-            registerSubclass(className: string, clazz: new (options?: any) => T): void;
+            registerSubclass(className: string, clazz: Constructor<T>): void;
             saveAll<T extends readonly Object[]>(list: T, options?: Object.SaveAllOptions): Promise<T>;
             unPinAll(objects: Object[]): Promise<void>;
             unPinAllObjects(): Promise<void>;
@@ -644,10 +648,9 @@ declare global {
          * });</pre></p>
          */
         class Query<T extends Object = Object> {
-            objectClass: any;
             className: string;
 
-            constructor(objectClass: string | (new (...args: any[]) => T | Object));
+            constructor(objectClass: string | Constructor<T | Object>);
 
             static and<U extends Object>(...args: Array<Query<U>>): Query<U>;
             static fromJSON<U extends Object>(className: string | (new () => U), json: any): Query<U>;
@@ -781,8 +784,8 @@ declare global {
             sortByTextScore(): this;
             startsWith<K extends keyof T["attributes"] | keyof BaseAttributes>(key: K, prefix: string): this;
             subscribe(): Promise<LiveQuerySubscription>;
-            toJSON(): any;
-            withJSON(json: any): this;
+            toJSON(): Record<string, unknown>;
+            withJSON(json: Record<string, unknown>): this;
             withCount(includeCount?: boolean): this;
             withinGeoBox<K extends keyof T["attributes"] | keyof BaseAttributes>(
                 key: K,
@@ -1009,17 +1012,33 @@ declare global {
             new (attributes?: Attributes): User;
 
             allowCustomUserClass(isAllowed: boolean): void;
-            become<T extends User>(sessionToken: string, options?: UseMasterKeyOption): Promise<T>;
-            current<T extends User>(): T | undefined;
-            currentAsync<T extends User>(): Promise<T | null>;
-            signUp<T extends User>(username: string, password: string, attrs: any, options?: SignUpOptions): Promise<T>;
-            logIn<T extends User>(username: string, password: string, options?: FullOptions): Promise<T>;
-            logOut<T extends User>(): Promise<T>;
+            become<T extends User>(
+                this: Constructor<T>,
+                sessionToken: string,
+                options?: UseMasterKeyOption,
+            ): Promise<T>;
+            current<T extends User>(this: Constructor<T>): T | null;
+            currentAsync<T extends User>(this: Constructor<T>): Promise<T | null>;
+            signUp<T extends User>(
+                this: Constructor<T>,
+                username: string,
+                password: string,
+                attrs: any,
+                options?: SignUpOptions,
+            ): Promise<T>;
+            logIn<T extends User>(
+                this: Constructor<T>,
+                username: string,
+                password: string,
+                options?: FullOptions,
+            ): Promise<T>;
+            logOut(): Promise<void>;
             requestPasswordReset<T extends User>(email: string, options?: SuccessFailureOptions): Promise<T>;
             extend(protoProps?: any, classProps?: any): any;
-            hydrate<T extends User>(userJSON: any): Promise<T>;
+            hydrate<T extends User>(this: Constructor<T>, userJSON: any): Promise<T>;
             enableUnsafeCurrentUser(): void;
             logInWith<T extends User>(
+                this: Constructor<T>,
                 provider: string | AuthProvider,
                 options: { authData?: AuthData },
                 saveOpts?: FullOptions,

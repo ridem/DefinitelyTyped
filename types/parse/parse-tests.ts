@@ -22,6 +22,65 @@ class Game extends Parse.Object<{ gameScore: GameScore; score: string }> {
     }
 }
 
+async function testSubclass() {
+    class CustomUser extends Parse.User {}
+    Parse.Object.registerSubclass("_User", CustomUser);
+    Parse.User.registerSubclass("_User", CustomUser);
+
+    class CustomRole extends Parse.Role {}
+    Parse.Object.registerSubclass("_Role", CustomRole);
+    Parse.Role.registerSubclass("_Role", CustomRole);
+
+    class NotExtendingParse {}
+    // $ExpectError
+    Parse.Object.registerSubclass("Anything", NotExtendingParse);
+
+    // $ExpectType Game
+    Game.createWithoutData("abc");
+    // $ExpectType CustomUser
+    CustomUser.createWithoutData("abc");
+    // $ExpectType CustomRole
+    CustomRole.createWithoutData("abc");
+
+    // $ExpectType string
+    Game.className;
+
+    // $ExpectType string
+    CustomUser.className;
+
+    // $ExpectType string
+    CustomRole.className;
+
+    // $ExpectType Game
+    Game.fromJSON({});
+
+    // $ExpectType CustomUser
+    CustomUser.fromJSON({});
+
+    // $ExpectType CustomRole
+    CustomRole.fromJSON({});
+
+    // User-specific:
+
+    // $ExpectType CustomUser
+    await CustomUser.logIn("username", "password");
+
+    // $ExpectType CustomUser | null
+    CustomUser.current();
+
+    // $ExpectType CustomUser | null
+    await CustomUser.currentAsync();
+
+    // $ExpectType void
+    await CustomUser.logOut();
+
+    const query1 = new Parse.Query(CustomUser).equalTo("firstName", "John");
+    const query2 = new Parse.Query(CustomUser).equalTo("firstName", "Joe");
+
+    // $ExpectType Query<CustomUser>
+    Parse.Query.or(query1, query2);
+}
+
 function test_config() {
     Parse.Config.save({ foo: "bar" }, { foo: true });
     Parse.Config.get({ useMasterKey: true });
@@ -1576,11 +1635,11 @@ function testObject() {
         JSONTyped.someUndefined;
         // $ExpectType null
         JSONTyped.someNull;
-        // $ExpectType Pointer | (ToJSON<Attributes> & JSONBaseAttributes)
+        // $ExpectType (ToJSON<Attributes> & JSONBaseAttributes) | Pointer
         JSONTyped.someParseObjectUntyped;
         // $ExpectType Pointer | (ToJSON<AttributesAllTypes> & JSONBaseAttributes)
         JSONTyped.someParseObjectTyped;
-        // $ExpectType any
+        // $ExpectType Record<string, unknown>
         JSONTyped.someParseACL;
         // $ExpectType any
         JSONTyped.someParseGeoPoint;
